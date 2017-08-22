@@ -244,6 +244,26 @@ def compress_video(filename, compression_type='mpeg4', kpbs=2048, gop=2):
     return True, middle_file
 
 
+def merge_video(filenames,dir):
+    args=""
+    for filename in filenames:
+        if not os.path.exists(os.getcwd()+"\\middle_file"):
+            os.mkdir(os.getcwd()+'\\middle_file')
+        if not os.path.exists(os.getcwd()+"\\middle_file\\merge"):
+            os.mkdir(os.getcwd()+"\\middle_file\\merge")
+        print(filename)
+        name=filename.split('\\')[len(filename.split('\\'))-1]
+        name=os.path.splitext(name)[0]
+        middle_dir='\middle_file\\merge\\'
+        subprocess.call('C:\\ffmpeg\\bin\\ffmpeg.exe -y -i '+filename+' -vcodec copy -acodec copy -vbsf h264_mp4toannexb '+os.getcwd()+middle_dir+name+'.ts')
+        args+=os.getcwd()+middle_dir+name+'.ts'+'|'
+    args=args[:-1]
+    subprocess.call('C:\\ffmpeg\\bin\\ffmpeg.exe -y -i \"concat:'+args+'\" -c copy -absf aac_adtstoasc '+dir+'\\test.mp4')
+    import shutil
+    if os.path.exists(os.getcwd()+"\middle_file"):
+        shutil.rmtree(os.getcwd()+'\middle_file')
+    print(args)
+
 def compress_video_to_audio(filename):
     """
     mode=3时先调用的方法，将视频中的音频分离出来
@@ -393,9 +413,14 @@ def read_dir_video(path, mode=3, num=5):
 
 
 # cut_video('E:\国王的演讲英语_标清.flv',mode=3)
-cut_video('E:\\87.鸟人BD中英双字修复版.rmvb', mode=-2,boundary=30)
+# cut_video('E:\\87.鸟人BD中英双字修复版.rmvb', mode=-2,boundary=30)
 # cut_video('D:\文件与资料\Onedrive\文档\PycharmProjects\internship_working\middle_file\Black.Mirror.S02.Special.White.Chirstmas.1080p.WEB-DL.AAC2.0.H.264-Coo7.mkv')
 # cut_video('E:\连续剧\黑镜子\Black.Mirror.S02.Special.White.Chirstmas.1080p.WEB-DL.AAC2.0.H.264-Coo7.mkv',mode=3)
 # frame_to_time(240002,24)
 # read_dir_video('E:\\')
 # compress_video('E:\连续剧\黑镜子\Black.Mirror.S02.Special.White.Chirstmas.1080p.WEB-DL.AAC2.0.H.264-Coo7.mkv')
+names=[]
+dir="E:\\1"
+for file in os.listdir("E:\\1"):
+    names.append(dir+"\\"+file)
+merge_video(names,dir)
