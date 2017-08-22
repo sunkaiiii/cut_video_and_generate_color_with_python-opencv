@@ -244,8 +244,14 @@ def compress_video(filename, compression_type='mpeg4', kpbs=2048, gop=2):
     return True, middle_file
 
 
-def merge_video(filenames,dir):
+def merge_video(filenames):
+    """
+    传入要合并的视频文件的list
+    :param filenames: 视频文件的路径list
+    :return: 输出合并的视频
+    """
     args=""
+    all_name=""
     for filename in filenames:
         if not os.path.exists(os.getcwd()+"\\middle_file"):
             os.mkdir(os.getcwd()+'\\middle_file')
@@ -253,16 +259,20 @@ def merge_video(filenames,dir):
             os.mkdir(os.getcwd()+"\\middle_file\\merge")
         print(filename)
         name=filename.split('\\')[len(filename.split('\\'))-1]
+        all_name+=os.path.splitext(name)[0]+'_'
         name=os.path.splitext(name)[0]
         middle_dir='\middle_file\\merge\\'
         subprocess.call('C:\\ffmpeg\\bin\\ffmpeg.exe -y -i '+filename+' -vcodec copy -acodec copy -vbsf h264_mp4toannexb '+os.getcwd()+middle_dir+name+'.ts')
         args+=os.getcwd()+middle_dir+name+'.ts'+'|'
     args=args[:-1]
-    subprocess.call('C:\\ffmpeg\\bin\\ffmpeg.exe -y -i \"concat:'+args+'\" -c copy -absf aac_adtstoasc '+dir+'\\test.mp4')
+    all_name=all_name[:-1]
+    dir=filenames[0].strip(filenames[0].split("\\")[len(filenames[0].split('\\'))-1])
+    # print(dir)
+    subprocess.call('C:\\ffmpeg\\bin\\ffmpeg.exe -y -i \"concat:'+args+'\" -c copy -absf aac_adtstoasc '+dir+all_name+'_merge.mp4')
     import shutil
     if os.path.exists(os.getcwd()+"\middle_file"):
         shutil.rmtree(os.getcwd()+'\middle_file')
-    print(args)
+    # print(args)
 
 def compress_video_to_audio(filename):
     """
@@ -420,7 +430,7 @@ def read_dir_video(path, mode=3, num=5):
 # read_dir_video('E:\\')
 # compress_video('E:\连续剧\黑镜子\Black.Mirror.S02.Special.White.Chirstmas.1080p.WEB-DL.AAC2.0.H.264-Coo7.mkv')
 names=[]
-dir="E:\\1"
+dir="e:\\1"
 for file in os.listdir("E:\\1"):
     names.append(dir+"\\"+file)
-merge_video(names,dir)
+merge_video(names)

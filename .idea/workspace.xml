@@ -14,8 +14,8 @@
       <file leaf-file-name="cut_video.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/cut_video.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="176">
-              <caret line="261" column="17" lean-forward="true" selection-start-line="261" selection-start-column="17" selection-end-line="261" selection-end-column="17" />
+            <state relative-caret-position="340">
+              <caret line="270" column="2" lean-forward="false" selection-start-line="270" selection-start-column="2" selection-end-line="270" selection-end-column="2" />
               <folding>
                 <element signature="e#15#25#0" expanded="true" />
               </folding>
@@ -787,8 +787,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/cut_video.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="176">
-          <caret line="261" column="17" lean-forward="true" selection-start-line="261" selection-start-column="17" selection-end-line="261" selection-end-column="17" />
+        <state relative-caret-position="340">
+          <caret line="270" column="2" lean-forward="false" selection-start-line="270" selection-start-column="2" selection-end-line="270" selection-end-column="2" />
           <folding>
             <element signature="e#15#25#0" expanded="true" />
           </folding>
