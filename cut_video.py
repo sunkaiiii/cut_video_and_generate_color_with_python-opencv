@@ -5,7 +5,8 @@ import subprocess
 import os
 import pandas as pd
 import collections
-
+import generate_color as gc
+import generate_scene as gs
 """
  -------------cut_video-------------
 功能：传入一个视频文件、路径，对视频进行切割，并保存在制定文件夹中
@@ -79,7 +80,7 @@ def write_log(startFrame, stopFrame, rate, filepath, filename, cut_filename):
     durations.append(durationTime)
 
 
-def write_log_to_excel(filename):
+def write_log_to_excel(filename,name):
     """
     将剪裁的结果写入到cut对应文件夹中的excel文件
     """
@@ -93,7 +94,7 @@ def write_log_to_excel(filename):
     df = pd.DataFrame(a, index=range(0, len(cut_filenames)))
     cut_filename = filename.split('\\')[len(filename.split('\\')) - 1].strip(
         '.' + filename.split('.')[len(filename.split('.')) - 1])
-    df.to_excel('cut\\' + cut_filename + '\\' + cut_filename + '.xlsx', sheet_name='剪裁信息')
+    df.to_excel('cut\\' + name + '\\' + cut_filename + '.xlsx', sheet_name='剪裁信息')
 
 
 def save_video(frames, frameToStart, frameToStop, rate, saveNums, filename, size):
@@ -148,7 +149,7 @@ def save_video(frames, frameToStart, frameToStop, rate, saveNums, filename, size
     return True
 
 
-def save_video_with_ffmpeg(filename, startFrame=0, stopFrame=1, rate=24, saveNumber=0, mode=0, kbps=2048):
+def save_video_with_ffmpeg(filename, startFrame=0, stopFrame=1, rate=24, saveNumber=0, mode=0, kbps=4096,name=""):
     """
         使用ffmpeg截取视频，支持更多视频格式且速度依旧很快，有多种参数可调
     :param filename: 视频文件的路径
@@ -164,9 +165,9 @@ def save_video_with_ffmpeg(filename, startFrame=0, stopFrame=1, rate=24, saveNum
     if (stopFrame < startFrame):
         print('结束帧小于开始帧，错误退出')
         return False
+    filepath = os.getcwd() + '\\cut\\' + name  # 路径指定为cut文件夹下原视频文件名
+    # print(filepath)
     filename = filename.split('\\')[len(filename.split('\\')) - 1]  # 去除文件路径，保留文件名
-    filepath = os.getcwd() + '\\cut\\' + filename.strip(
-        '.' + filename.split('.')[len(filename.split('.')) - 1])  # 路径指定为cut文件夹下原视频文件名
     if not os.path.exists(os.getcwd()+'\\cut'):
         os.mkdir(os.getcwd()+'\\cut')
     if not os.path.exists(filepath):
@@ -221,7 +222,7 @@ def save_video_with_ffmpeg(filename, startFrame=0, stopFrame=1, rate=24, saveNum
     return True
 
 
-def compress_video(filename, compression_type='mpeg4', kpbs=2048, gop=2):
+def compress_video(filename, compression_type='mpeg4', kpbs=4096, gop=2):
     """
     mode=-2时默认调用的方法，压缩视频，并调整关键帧
     :param filename: 文件名
@@ -301,6 +302,9 @@ def cut_video(filename, mode=3, boundary=19):
     3、默认值，提取视频音轨，使用OpenCV进行帧提取写入视频文件，与截取对应时间音轨合并为视频，速度较快，占用一定内存和临时空间，但精准度极高
     :return: 剪裁完成后返回True，否则返回False
     """
+    print("剪裁:"+filename)
+    name = os.path.splitext(filename)[0]  # 去除文件扩展名
+    name = name.split('\\')[len(name.split('\\')) - 1]  # 去除文件路径，只保留文件名
     if mode == -2:
         if not os.path.exists(os.getcwd() + '\\middle_file'):
             os.mkdir(os.getcwd() + '\\middle_file')
@@ -311,8 +315,6 @@ def cut_video(filename, mode=3, boundary=19):
     elif mode == 3:
         if not os.path.exists(os.getcwd() + '\\middle_file'):
             os.mkdir(os.getcwd() + '\\middle_file')
-        name = os.path.splitext(filename)[0]  # 去除文件扩展名
-        name = name.split('\\')[len(name.split('\\')) - 1]  # 去除文件路径，只保留文件名
         if not os.path.exists(os.getcwd() + '\\middle_file\\' + name):
             os.mkdir(os.getcwd() + '\\middle_file\\' + name)
         compress_video_to_audio(filename)
@@ -336,8 +338,8 @@ def cut_video(filename, mode=3, boundary=19):
             print("结束帧为：第" + str(int(frameToStop)) + "帧")
         rate = capture.get(cv2.CAP_PROP_FPS)
         print("帧率为:" + str(rate))
-        delay = 1000 / rate;
-        forucc = capture.get(cv2.CAP_PROP_FOURCC)
+        # delay = 1000 / rate;
+        # forucc = capture.get(cv2.CAP_PROP_FOURCC)
         # print(forucc)
         currentFrame = frameToStart
         saveNums = 0
@@ -372,7 +374,7 @@ def cut_video(filename, mode=3, boundary=19):
                         saveFlag = save_video(frames, frameToStart, currentFrame, rate, saveNums, filename, size)
                         frames = []  # 清空列表缓存，进行下一次截取
                     else:
-                        saveFlag = save_video_with_ffmpeg(filename, frameToStart, currentFrame, rate, saveNums, mode)
+                        saveFlag = save_video_with_ffmpeg(filename, frameToStart, currentFrame, rate, saveNums, mode,name=name)
 
                     if saveFlag:
                         print('第' + str(saveNums) + '段视频保存成功')
@@ -383,7 +385,7 @@ def cut_video(filename, mode=3, boundary=19):
                         break
                 else:
                     print('小于1秒的剪辑')
-        write_log_to_excel(filename)  # 剪裁结束，存入表格
+        write_log_to_excel(filename,name)  # 剪裁结束，存入表格
         capture.release()
 
         """
@@ -399,10 +401,10 @@ def cut_video(filename, mode=3, boundary=19):
 
     else:
         print('打开视频失败')
-    return True
+    return os.getcwd()+'\cut\\'+name
 
 
-def read_dir_video(path, mode=3, num=5):
+def read_dir_video(path, mode=3, num=9999,generate_color=False):
     """
     如果要批量切割视频，应调用此方法
     :param path: 路径名
@@ -421,11 +423,21 @@ def read_dir_video(path, mode=3, num=5):
         file = os.path.join(path, file)
         # print(file)
         if not os.path.isdir(file):
-            cut_video(file, mode)
+            print(file)
+            cut_path=cut_video(filename=file, mode=mode)
+            generate_video_info(cut_path,generate_color)
         count += 1
 
+def read_video(filename, mode=3,generate_color=False):
+    cut_path=cut_video(filename,mode)
+    generate_video_info(cut_path,generate_color)
 
-cut_video('E:\V60511-173651.mp4',mode=0)
+def generate_video_info(cut_path,generate_color=False):
+    if generate_color==True:
+        gc.generate_cut_video_color(cut_path)
+
+
+# cut_video('E:\V60511-173651.mp4',mode=0)
 
 # names=[]
 # dir="e:\\1"
