@@ -1,4 +1,4 @@
-#coding=gbk
+# coding=gbk
 import os
 import cv2 as cv2
 import numpy as np
@@ -12,9 +12,11 @@ import k_mean_class
 并将分析图保存在指定路径当中
 """
 
+video_extensions = [".avi", ".mp4", ".flv", ".mpg", ".mpeg", ".3gp"]
+generate_color_path = os.path.join(os.getcwd(), 'cut_main_color')
 
 
-def handle_main_color(colors,frame,filename,pathname,image_count,num=10):
+def handle_main_color(colors, frame, filename, pathname, image_count, num=10):
     """
     将分析好的颜色画在图片中，并调用方法保存图片
     :param colors:分析好的颜色list
@@ -30,25 +32,26 @@ def handle_main_color(colors,frame,filename,pathname,image_count,num=10):
     height = width * ratio
     size = (int(width), int(height))
     frame = cv2.resize(frame, size, interpolation=cv2.INTER_AREA)
-    count=0
-    rec_width=width / num
-    rec_height=rec_width*0.75
-    width_add=width/200
-    height_add=width/200
-    cv2.rectangle(frame,(0,int(height-rec_height)),(int(width),int(height)),(220,220,220),-1)
+    count = 0
+    rec_width = width / num
+    rec_height = rec_width * 0.75
+    width_add = width / 200
+    height_add = width / 200
+    cv2.rectangle(frame, (0, int(height - rec_height)), (int(width), int(height)), (220, 220, 220), -1)
     for i in colors:
-        bgr=(i[2],i[1],i[0])
+        bgr = (i[2], i[1], i[0])
         # print(bgr)
         cv2.rectangle(frame,
-                      (int(rec_width* count+width_add), int(height - rec_height+height_add)),
-                      (int(rec_width * (count+1)-width_add),int(height-height_add)),
+                      (int(rec_width * count + width_add), int(height - rec_height + height_add)),
+                      (int(rec_width * (count + 1) - width_add), int(height - height_add)),
                       bgr, -1)
-        count+=1
+        count += 1
     # cv2.imshow('21',frame)
     # cv2.waitKey(0)
-    save_file(pathname,filename,frame,image_count)
+    save_file(pathname, filename, frame, image_count)
 
-def find_main_color(frame,filename,pathname,image_count,max_iterations=10, min_distance=0.5, k=10):
+
+def find_main_color(frame, filename, pathname, image_count, max_iterations=10, min_distance=0.5, k=10):
     """
     mode=0时调用的方法，使用聚类k值分析来判断图像主题颜色
     :param frame: 要分析的帧
@@ -75,10 +78,11 @@ def find_main_color(frame,filename,pathname,image_count,max_iterations=10, min_d
         r, g, b = colorsys.hsv_to_rgb(hsv_color[i][0], hsv_color[i][1], hsv_color[i][2])
         color[i] = (b, g, r)
         # print(color[i])
-    handle_main_color(color, frame,filename,pathname,image_count)
+    handle_main_color(color, frame, filename, pathname, image_count)
     return True
 
-def save_file(pathname,filename,firstframe,image_count):
+
+def save_file(pathname, filename, firstframe, image_count):
     """
     将画好的，带有主题颜色色块的图片保存
     :param pathname:路径名
@@ -86,16 +90,19 @@ def save_file(pathname,filename,firstframe,image_count):
     :param firstframe:视频帧
     :param image_count:计数
     """
-    pathname = pathname.split('\\')[len(pathname.split('\\')) - 1]
-    path = 'cut_main_color\\' + pathname + '\\'
+    pathname = os.path.basename(pathname)
+    if not os.path.exists(generate_color_path):
+        os.mkdir(generate_color_path)
+    path = os.path.join(generate_color_path, pathname)
     if not os.path.exists(path):
         os.mkdir(path)
-    filename = filename.split('\\')[len(filename.split('\\')) - 1]
+    filename = os.path.basename(filename)
     # cv2.imwrite('cut_main_color\\123\\'+ filename + '_' + str(image_count) + '.jpg', frame)
-    cv2.imencode('.jpg', firstframe)[1].tofile(path + filename + '_' + str(image_count) + '.jpg')
-    print(os.getcwd() + '\\' + path + filename + '_' + str(image_count) + '.jpg' + '保存成功')
+    cv2.imencode('.jpg', firstframe)[1].tofile(os.path.join(path, filename + '_' + str(image_count) + '.jpg'))
+    print(os.path.join(path, filename + '_' + str(image_count) + '.jpg') + '保存成功')
 
-def find_main_color_by_vertical_cut(frame,filename,image_count,pathname,firstframe):
+
+def find_main_color_by_vertical_cut(frame, filename, image_count, pathname, firstframe):
     """
     将横坐标切割为10份，并逐次查找每一份当中的主题颜色
     :param frame: 当前帧
@@ -103,63 +110,66 @@ def find_main_color_by_vertical_cut(frame,filename,image_count,pathname,firstfra
     :param image_count: 计数
     """
 
-    #重新调整图片大小
-    shape=frame.shape
-    width=1024
+    # 重新调整图片大小
+    shape = frame.shape
+    width = 1024
     ratio = float(shape[0]) / float(shape[1])
     height = width * ratio
     size = (int(width), int(height))
     frame = cv2.resize(frame, size, interpolation=cv2.INTER_AREA)
-    firstframe=cv2.resize(firstframe, size, interpolation=cv2.INTER_AREA)
+    firstframe = cv2.resize(firstframe, size, interpolation=cv2.INTER_AREA)
     try:
-         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     except:
         return None
     image = Image.fromarray(image, 'RGB')
     image = image.convert('RGBA')
-    width=image.width
-    height=image.height
-    for i in range(0,10):
+    width = image.width
+    height = image.height
+    for i in range(0, 10):
         # 切割视频的纵向区域选择图像的3/10至7/10的位置，排除一些边缘干扰
-        cut_image = image.crop((image.width / 10 * i, image.height/20*6, image.width / 10 * (i + 1), image.height/20*14))
+        cut_image = image.crop(
+            (image.width / 10 * i, image.height / 20 * 6, image.width / 10 * (i + 1), image.height / 20 * 14))
         # cut_image.show()
-        max_score=0
-        colors=[]
-        dominant_color=()
-        for count,(r,g,b,a) in cut_image.getcolors(cut_image.size[0]*cut_image.size[1]):
-            if a==0:
+        max_score = 0
+        colors = []
+        dominant_color = ()
+        for count, (r, g, b, a) in cut_image.getcolors(cut_image.size[0] * cut_image.size[1]):
+            if a == 0:
                 continue
             # print(r,g,b)
-            saturation=colorsys.rgb_to_hsv(r/255.0,g/255.0,b/255.0)[1]
-            y=min(abs(r*2104+g*4130+b*802+4096+131072)>>13,235)
-            y=(y-16.0)/(235-16)
+            saturation = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)[1]
+            y = min(abs(r * 2104 + g * 4130 + b * 802 + 4096 + 131072) >> 13, 235)
+            y = (y - 16.0) / (235 - 16)
             # print(y)
 
             # 过滤掉高光和阴影
-            if y>0.95:
+            if y > 0.95:
                 continue
-            if y<0.05:
+            if y < 0.05:
                 continue
 
-            score=(saturation+0.1)*count
-            if score>max_score:
-                if (b,g,r) in colors: #尽量寻找不一样的颜色
+            score = (saturation + 0.1) * count
+            if score > max_score:
+                if (b, g, r) in colors:  # 尽量寻找不一样的颜色
                     continue
-                max_score=score
-                dominant_color=(b,g,r)
+                max_score = score
+                dominant_color = (b, g, r)
 
         try:
             colors.append(dominant_color)
             # 在原图上显示色块
             cv2.rectangle(firstframe,
-                          (int(width/10*i),height-64),
-                          (int(width/10*(i+1)),height),
+                          (int(width / 10 * i), height - 64),
+                          (int(width / 10 * (i + 1)), height),
                           dominant_color,
                           -1)
         except:
             continue
-    save_file(pathname,filename,firstframe,image_count)
-def read_cut_video(filename,pathname,mode=0,max_iterations=10, min_distance=0.5, k=10):
+    save_file(pathname, filename, firstframe, image_count)
+
+
+def read_cut_video(filename, pathname, mode=0, max_iterations=10, min_distance=0.5, k=10):
     """
     读取传入进来的文件帧，并调用相关方法进行分析
     :return:
@@ -170,38 +180,39 @@ def read_cut_video(filename,pathname,mode=0,max_iterations=10, min_distance=0.5,
         print('文件打开失败')
         return
     success, frame = capture.read()
-    rate_count=1
+    rate_count = 1
     rate = capture.get(cv2.CAP_PROP_FPS)
     print("帧率为:" + str(rate))
     # 使用opencv获取视频帧数返回为infinity,故暂时使用24帧
     # 视频剪裁的默认帧率为24
-    if rate>1000 or rate<=0:
-        rate=24
+    if rate > 1000 or rate <= 0:
+        rate = 24
     totalFrameNumber = capture.get(cv2.CAP_PROP_FRAME_COUNT)
-    generate_frame=[]
-    for i in range(1,4):
-        generate_frame.append(int(totalFrameNumber/4*i))
-    image_count=0 #保存图片数量计数
+    generate_frame = []
+    for i in range(1, 4):
+        generate_frame.append(int(totalFrameNumber / 4 * i))
+    image_count = 0  # 保存图片数量计数
     while success:
         # cal_frame_hist(frame)
         success, frame = capture.read()
-        #读取失败,退出循环
+        # 读取失败,退出循环
         if not success:
             break
         rate_count += 1
         # 在剪裁视频中,当读取到对应切割点的frame时分析颜色
         if rate_count in generate_frame:
-            firstframe=frame
-            if mode==0:
-                saturation = cv2.convertScaleAbs(frame, cv2.CV_8UC1, 1.2, -20) #增加图像对比度，降低一定亮度，使颜色区分明显
-                ok=0
+            firstframe = frame
+            if mode == 0:
+                saturation = cv2.convertScaleAbs(frame, cv2.CV_8UC1, 1.2, -20)  # 增加图像对比度，降低一定亮度，使颜色区分明显
+                ok = 0
                 try:
-                    for i in range(0,3):
-                        if find_main_color(saturation,filename,pathname,image_count,max_iterations, min_distance, k) is True:##如果没有找到主要颜色或者程序执行错误,重新进入循环:
-                            ok=1
+                    for i in range(0, 3):
+                        if find_main_color(saturation, filename, pathname, image_count, max_iterations, min_distance,
+                                           k) is True:  ##如果没有找到主要颜色或者程序执行错误,重新进入循环:
+                            ok = 1
                             break
-                        print('进行第'+str(i+1)+'次重试')
-                    if ok==0:
+                        print('进行第' + str(i + 1) + '次重试')
+                    if ok == 0:
                         success, frame = capture.read()
                         rate_count += 1
                         # 读取失败,退出循环
@@ -216,16 +227,15 @@ def read_cut_video(filename,pathname,mode=0,max_iterations=10, min_distance=0.5,
                     return
                 finally:
                     image_count += 1
-            if mode==1:
+            if mode == 1:
                 kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 25))
                 morph_close = cv2.morphologyEx(frame, cv2.MORPH_CLOSE, kernel)  # 对图像做闭运算，减少颜色复杂度
-                saturation = cv2.convertScaleAbs(morph_close, cv2.CV_8UC1, 1.2, -20)# 增加图像对比度，降低一定亮度，使颜色区分明显
-                find_main_color_by_vertical_cut(saturation,filename,image_count,pathname,firstframe)
+                saturation = cv2.convertScaleAbs(morph_close, cv2.CV_8UC1, 1.2, -20)  # 增加图像对比度，降低一定亮度，使颜色区分明显
+                find_main_color_by_vertical_cut(saturation, filename, image_count, pathname, firstframe)
                 image_count += 1
 
 
-
-def generate_cut_video_color(filepath='cut\\',mode=0,max_iterations=10, min_distance=0.5, k=10):
+def generate_cut_video_color(filepath='cut\\', mode=0, max_iterations=10, min_distance=0.5, k=10):
     """
     读取剪裁文件夹下的所有文件，并依次对其进行分析
     :param mode:
@@ -233,135 +243,21 @@ def generate_cut_video_color(filepath='cut\\',mode=0,max_iterations=10, min_dist
     1、对图像整体分析颜色，取前10个主题颜色。
     :return:
     """
-    list=os.listdir(filepath)
+    list = os.listdir(filepath)
     for file in list:
         file = os.path.join(filepath, file)
         if not os.path.isdir(file):
-            print('读取'+file)
-            read_cut_video(file,filepath,mode,max_iterations, min_distance, k)
-
+            extension = os.path.splitext(file)[1]
+            if extension in video_extensions:
+                print('读取' + file)
+                read_cut_video(file, filepath, mode, max_iterations, min_distance, k)
 
 
 if __name__ == "__main__":
-    generate_cut_video_color('D:\文件与资料\Onedrive\文档\PycharmProjects\internship_working\cut\\开场',mode=0)
+    generate_cut_video_color('D:\文件与资料\Onedrive\文档\PycharmProjects\internship_working\cut\\开场', mode=0)
     # filelist=os.listdir('E:\picture2')
     # count=0
     # for file in filelist:
     #     frame=cv2.imread('E:\picture2\\'+file)
     #     find_main_color(frame=frame,filename=file,image_count=count,pathname='E:\picture')
     #     count+=1
-
-
-
-
-
-
-
-#
-# def dict2list(dic: dict):
-#         ''' 将字典转化为列表 '''
-#         keys = dic.keys()
-#         vals = dic.values()
-#         lst = [(key, val) for key, val in zip(keys, vals)]
-#         return lst
-
-
-        # def find_main_color(frame):
-#     '''
-#     传入视频帧,找到帧的主要颜色并返回
-#     :param frame:传入的视频帧
-#     :return:此帧的主要颜色
-#     '''
-#
-#     # 将opencv的image转换为Image的image
-#     try:
-#         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-#     except:
-#         return None
-#     image = Image.fromarray(image, 'RGB')
-#     # print(max(image.getcolors(image.size[0] * image.size[1])))
-#     image=image.convert('RGBA')
-#     max_score=0
-#     sort_socre={} #存放主要颜色的字典
-#     for count,(r,g,b,a) in image.getcolors(image.size[0]*image.size[1]):
-#         if a==0:
-#             continue
-#         # print(r,g,b)
-#         saturation=colorsys.rgb_to_hsv(r/255.0,g/255.0,b/255.0)[1]
-#         y=min(abs(r*2104+g*4130+b*802+4096+131072)>>13,235)
-#         y=(y-16.0)/(235-16)
-#         # print(y)
-#
-#         # 过滤掉高光和阴影
-#         if y>0.9:
-#             continue
-#         if y<0.1:
-#             continue
-#
-#         score=(saturation+0.1)*count
-#         if score>max_score:
-#             max_score=score
-#             dominant_color=(r,g,b)
-#             sort_socre[str(dominant_color)]=max_score
-#
-#     # print(sort_socre)
-#     sort_color=sorted(dict2list(sort_socre), key=lambda x: x[1], reverse=True)  # 按照score降序排列)
-#     # print(sort_color)
-#     rowCount=0
-#     main_colors=[]
-#     for i in range(0,len(sort_color)):
-#         main_colors.append(sort_color[i][0])
-#         rowCount+=1
-#         if rowCount==10:
-#             return main_colors
-#     return main_colors
-#
-# def rgb_str_to_rgb_tuple(rgb_str):
-#     '''
-#     从find_main_color返回的字典里面的数据为str
-#     将其转换为tuple
-#     '''
-#     rgb_str = rgb_str.strip("(")
-#     rgb_str = rgb_str.strip(")")
-#     rgb_str = rgb_str.strip('\'')
-#     rgb_str = rgb_str.replace(', ', ',')
-#     rgb_list = rgb_str.split(",")
-#     # rgb转换为bgr
-#     return (int(rgb_list[2]),int(rgb_list[1]),int(rgb_list[0]))
-#
-# def save_frame_main_colors(frame_main_colors,filename,image_count,pathname,firstframe):
-#     """
-#     保存mode=1时分析好的图像为文件
-#     :param frame_main_colors: 前十个主体颜色
-#     :param frame: 图像帧
-#     :param image_count: 计数
-#     """
-#     # 设置保存图片的分辨率
-#     shape=firstframe.shape
-#     width=1024
-#     ratio = float(shape[0]) / float(shape[1])
-#     height = width * ratio
-#     size = (int(width), int(height))
-#     firstframe = cv2.resize(firstframe, size, interpolation=cv2.INTER_AREA)
-#     # 在原始图片的底部以此放入主要颜色
-#     # 目前暂定获取主要颜色的数量为10
-#     count=0
-#     for i in frame_main_colors:
-#         rgb = rgb_str_to_rgb_tuple(i)
-#         # print(rgb)
-#         cv2.rectangle(firstframe,
-#                       (int(width / 10 * count), int(height - 64)),
-#                       (int(width / 10 * (count + 1)),int(height)),
-#                       rgb, -1)
-#         count+=1
-#     # cv2.imshow('image', img)
-#     # 为新的图片命名
-#     pathname=pathname.split('\\')[len(pathname.split('\\'))-1]
-#     path='cut_main_color\\'+pathname+'\\'
-#     if not os.path.exists(path):
-#         os.mkdir(path)
-#     filename = filename.split('\\')[len(filename.split('\\')) - 1]
-#     # cv2.imwrite(os.getcwd()+'\\'+path + filename + '_' + str(image_count)+ '.jpg', img)
-#     cv2.imencode('.jpg', firstframe)[1].tofile(path + filename + '_' + str(image_count) + '.jpg')
-#     print(os.getcwd()+'\\'+path + filename + '_' + str(image_count)+ '.jpg'+ '保存成功')
-#     # cv2.waitKey(0)
